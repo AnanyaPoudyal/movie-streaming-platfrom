@@ -1,95 +1,90 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
 
-export default function Home() {
+import { useEffect, useState } from 'react';
+import Head from 'next/head';
+import styles from './page.module.css'; 
+
+const Home = () => {
+  const [movies, setMovies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedMovie, setSelectedMovie] = useState(null); 
+
+  useEffect(() => {
+    const fetchMovies = async () => {
+      try {
+        const res = await fetch('https://api.themoviedb.org/3/discover/movie', {
+          headers: {
+            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`
+          }
+        });
+        const data = await res.json();
+        console.log("Fetched movies data: ", data); 
+        setMovies(data.results || []); 
+        setSelectedMovie(data.results[0] || null); 
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false); 
+      }
+    };
+
+    fetchMovies();
+  }, []);
+
+  if (loading) {
+    return <div>Loading...</div>; 
+  }
+
+  const handleMovieClick = (movie) => {
+    setSelectedMovie(movie);
+  };
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>app/page.js</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div>
+      <Head>
+        <title>Movie Streaming Platform</title>
+      </Head>
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      {/* Banner with movie description */}
+      {selectedMovie && selectedMovie.backdrop_path && (
+        <section className={styles.banner}>
+          <img
+            src={`https://image.tmdb.org/t/p/original/${selectedMovie.backdrop_path}`}
+            alt="Movie Banner"
+            className={styles.bannerImage}
+          />
+          <div className={styles.overlay}></div>
+          <div className={styles.bannerContent}>
+            <h1 className={styles.title}>{selectedMovie.title}</h1>
+            <p className={styles.overview}>{selectedMovie.overview}</p>
+            {selectedMovie.vote_average && (
+              <div className={styles.ratingBox}>
+                <span className={styles.ratingText}>
+                  IMDb: {selectedMovie.vote_average.toFixed(1)}
+                </span>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      <div className={styles.movieSlideshow}>
+        {movies.map((movie) => (
+          <div
+            key={movie.id}
+            className={styles.movieThumbnail}
+            onClick={() => handleMovieClick(movie)}
           >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+            <img
+              src={`https://image.tmdb.org/t/p/w500/${movie.poster_path}`}
+              alt={movie.title}
+              className={styles.movieImage}
             />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          </div>
+        ))}
+      </div>
     </div>
   );
-}
+};
+
+export default Home;
